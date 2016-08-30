@@ -3,6 +3,7 @@
 package pb
 
 import (
+	"sort"
 	"sync"
 	"time"
 )
@@ -18,9 +19,23 @@ func StartPool(pbs ...*ProgressBar) (pool *Pool, err error) {
 	return
 }
 
+type pbList []*ProgressBar
+
+func (pbl pbList) Len() int {
+	return len(pbl)
+}
+
+func (pbl pbList) Less(i, j int) bool {
+	return pbl[i].prefix < pbl[j].prefix
+}
+
+func (pbl pbList) Swap(i, j int) {
+	pbl[i], pbl[j] = pbl[j], pbl[i]
+}
+
 type Pool struct {
 	RefreshRate time.Duration
-	bars        []*ProgressBar
+	bars        pbList
 	quit        chan int
 	finishOnce  sync.Once
 }
@@ -33,6 +48,7 @@ func (p *Pool) Add(pbs ...*ProgressBar) {
 		bar.Start()
 		p.bars = append(p.bars, bar)
 	}
+	sort.Sort(p.bars)
 }
 
 func (p *Pool) start() (err error) {
